@@ -28,7 +28,7 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
 
 def main() -> None:
     # Replace 'YOUR_BOT_TOKEN' with your Bot's API token
-    updater = Updater("YOUR_BOT_TOKEN", use_context=True)
+    updater = Updater("6759397107:AAHjYMEyaauDyFVjkiT2Zq8B3hMTNvzJus0", use_context=True)
 
     dispatcher = updater.dispatcher
 
