@@ -3,34 +3,30 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 import re
 
 def extract_card_details(text):
-    # A more robust regex pattern that accounts for different card number formats
-    card_number_pattern = r'(\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b)'
-    # A pattern for expiry date that considers various prefixes and separators
-    expiry_date_pattern = r'\b(?:exp\.?|EXP\.?|expiration|EXPIRATION)\s*:?[-\s*]?\s*([0-1]?\d[-\/]\d{2,4})\b'
-    # A pattern for CVV that considers various prefixes and possible separators
-    cvv_pattern = r'\b(?:cvv|CVV|Cvv|security code|SECURITY CODE|code)\s*:?[-\s*]?(\d{3,4})\b'
+    card_details = []
+    lines = text.split('\n')
 
-    card_numbers = re.findall(card_number_pattern, text)
-    expiry_dates = re.findall(expiry_date_pattern, text, re.IGNORECASE)
-    cvvs = re.findall(cvv_pattern, text, re.IGNORECASE)
+    for i, line in enumerate(lines):
+        # Regex pattern to match card numbers
+        card_number_match = re.search(r'\b(\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4})\b', line)
+        if card_number_match:
+            card_number = card_number_match.group(1).replace(' ', '').replace('-', '')
+            # Check if there is a next line and try to find expiry and CVV in it
+            if i+1 < len(lines):
+                next_line = lines[i+1]
+                # Regex pattern for expiry date and CVV
+                expiry_date_match = re.search(r'\b([0-1]?\d[-\/]\d{2,4})\b', next_line)
+                cvv_match = re.search(r'\b(\d{3,4})\b', next_line)
+                if expiry_date_match and cvv_match:
+                    expiry_date = expiry_date_match.group(1).replace('/', '').replace('-', '')
+                    if len(expiry_date) == 3:  # Pad single-digit month with zero
+                        expiry_date = '0' + expiry_date
+                    if len(expiry_date) == 6:  # Convert four-digit year to two digits
+                        expiry_date = expiry_date[:2] + expiry_date[4:]
+                    cvv = cvv_match.group(1)
+                    card_details.append(f'{card_number}|{expiry_date}|{cvv}')
 
-    # Sanitize and format the found details
-    cards = []
-    for i, card_number in enumerate(card_numbers):
-        if i < len(expiry_dates) and i < len(cvvs):
-            # Remove any non-digit characters from card number
-            clean_card_number = re.sub(r'\D', '', card_number)
-            # Ensure the expiry date is in the format MMYY
-            expiry_date = expiry_dates[i].replace('/', '').replace('-', '')
-            if len(expiry_date) == 3:  # Pad single-digit month with a zero
-                expiry_date = '0' + expiry_date
-            if len(expiry_date) == 6:  # Convert YYYY to YY
-                expiry_date = expiry_date[:2] + expiry_date[4:]
-            # Get the CVV
-            cvv = cvvs[i]
-            cards.append(f'{clean_card_number}|{expiry_date}|{cvv}')
-
-    return cards
+    return card_details
 
 def format_card_details(update: Update, context: CallbackContext) -> None:
     card_details = extract_card_details(update.message.text)
@@ -39,7 +35,7 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
 
 def main() -> None:
     # Replace 'YOUR_BOT_TOKEN' with your Bot's API token
-    updater = Updater("6759397107:AAHjYMEyaauDyFVjkiT2Zq8B3hMTNvzJus0", use_context=True)
+    updater = Updater("YOUR_BOT_TOKEN", use_context=True)
 
     dispatcher = updater.dispatcher
 
