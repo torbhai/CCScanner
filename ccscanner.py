@@ -11,20 +11,29 @@ def extract_card_details(text):
         card_number_match = re.search(r'\b(\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4})\b', line)
         if card_number_match:
             card_number = card_number_match.group(1).replace(' ', '').replace('-', '')
-            # Check if there is a next line and try to find expiry and CVV in it
-            if i+1 < len(lines):
-                next_line = lines[i+1]
-                # Regex pattern for expiry date and CVV
-                expiry_date_match = re.search(r'\b([0-1]?\d[-\/]\d{2,4})\b', next_line)
-                cvv_match = re.search(r'\b(\d{3,4})\b', next_line)
-                if expiry_date_match and cvv_match:
-                    expiry_date = expiry_date_match.group(1).replace('/', '').replace('-', '')
-                    if len(expiry_date) == 3:  # Pad single-digit month with zero
-                        expiry_date = '0' + expiry_date
-                    if len(expiry_date) == 6:  # Convert four-digit year to two digits
-                        expiry_date = expiry_date[:2] + expiry_date[4:]
-                    cvv = cvv_match.group(1)
-                    card_details.append(f'{card_number}|{expiry_date}|{cvv}')
+            # Initialize expiry_date and cvv in case they are not found in the next two lines
+            expiry_date, cvv = None, None
+            # Look ahead in the next two lines for expiry date and CVV
+            for j in range(1, 3):
+                if i+j < len(lines):
+                    next_line = lines[i+j]
+                    # Regex pattern for expiry date if it has not been found yet
+                    if not expiry_date:
+                        expiry_date_match = re.search(r'\b([0-1]?\d[-\/]\d{2,4})\b', next_line)
+                        if expiry_date_match:
+                            expiry_date = expiry_date_match.group(1).replace('/', '').replace('-', '')
+                            if len(expiry_date) == 3:  # Pad single-digit month with zero
+                                expiry_date = '0' + expiry_date
+                            if len(expiry_date) == 6:  # Convert four-digit year to two digits
+                                expiry_date = expiry_date[:2] + expiry_date[4:]
+                    # Regex pattern for CVV if it has not been found yet
+                    if not cvv:
+                        cvv_match = re.search(r'\b(\d{3,4})\b', next_line)
+                        if cvv_match:
+                            cvv = cvv_match.group(1)
+            # If both expiry date and CVV have been found, append the details
+            if expiry_date and cvv:
+                card_details.append(f'{card_number}|{expiry_date}|{cvv}')
 
     return card_details
 
