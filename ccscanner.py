@@ -7,7 +7,7 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
 
     card_number_pattern = r'\b\d{4} \d{4} \d{4} \d{4}\b'
     expiry_date_pattern = r'\b\d{2}/\d{2}\b'
-    cvv_pattern = r'\b\d{3}\b'
+    cvv_pattern = r'\b\d{3,4}\b'  # updated to handle CVV of 3 or 4 digits.
 
     card_numbers = re.findall(card_number_pattern, update.message.text)
     expiry_dates = re.findall(expiry_date_pattern, update.message.text)
@@ -22,7 +22,7 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
             formatted_cards.append(f'{card_number} | {expiry_date} | {cvv}')
         message = '\n'.join(formatted_cards)
     else:
-        message = 'Invalid input. Please ensure your input includes a 16-digit card number, a 4-digit expiry date, and a 3-digit CVV for each card.'
+        message = 'Invalid input. Please ensure your input includes a 16-digit card number, a 4-digit expiry date, and a 3 or 4-digit CVV for each card.'
 
     update.message.reply_text(message)
 
