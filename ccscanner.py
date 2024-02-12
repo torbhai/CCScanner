@@ -2,29 +2,39 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import re
 
-def extract_card_details(entry):
-    card_number_match = re.search(r'(\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]\d{4})', entry)
-    expiry_date_match = re.search(r'\bexp\.?\s*([0-1]?\d[/\-][0-9]{2,4})', entry, re.IGNORECASE)
-    cvv_match = re.search(r'\b(?:cvv|CVV|Cvv)[-:\s]?\s*(\d{3,4})\b', entry)
+def extract_card_details(text):
+    # A more robust regex pattern that accounts for different card number formats
+    card_number_pattern = r'(\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b)'
+    # A pattern for expiry date that considers various prefixes and separators
+    expiry_date_pattern = r'\b(?:exp\.?|EXP\.?|expiration|EXPIRATION)\s*:?[-\s*]?\s*([0-1]?\d[-\/]\d{2,4})\b'
+    # A pattern for CVV that considers various prefixes and possible separators
+    cvv_pattern = r'\b(?:cvv|CVV|Cvv|security code|SECURITY CODE|code)\s*:?[-\s*]?(\d{3,4})\b'
 
-    if card_number_match and expiry_date_match and cvv_match:
-        card_number = card_number_match.group(1).replace(' ', '').replace('-', '')
-        expiry_date = expiry_date_match.group(1).replace('/', '').replace('-', '')
-        if len(expiry_date) == 3:  # Pad single-digit month with zero
-            expiry_date = '0' + expiry_date
-        if len(expiry_date) == 6:  # Convert four-digit year to two digits
-            expiry_date = expiry_date[:2] + expiry_date[4:]
-        cvv = cvv_match.group(1)
-        return f'{card_number}|{expiry_date}|{cvv}'
-    else:
-        return None
+    card_numbers = re.findall(card_number_pattern, text)
+    expiry_dates = re.findall(expiry_date_pattern, text, re.IGNORECASE)
+    cvvs = re.findall(cvv_pattern, text, re.IGNORECASE)
+
+    # Sanitize and format the found details
+    cards = []
+    for i, card_number in enumerate(card_numbers):
+        if i < len(expiry_dates) and i < len(cvvs):
+            # Remove any non-digit characters from card number
+            clean_card_number = re.sub(r'\D', '', card_number)
+            # Ensure the expiry date is in the format MMYY
+            expiry_date = expiry_dates[i].replace('/', '').replace('-', '')
+            if len(expiry_date) == 3:  # Pad single-digit month with a zero
+                expiry_date = '0' + expiry_date
+            if len(expiry_date) == 6:  # Convert YYYY to YY
+                expiry_date = expiry_date[:2] + expiry_date[4:]
+            # Get the CVV
+            cvv = cvvs[i]
+            cards.append(f'{clean_card_number}|{expiry_date}|{cvv}')
+
+    return cards
 
 def format_card_details(update: Update, context: CallbackContext) -> None:
-    card_entries = update.message.text.strip().split('#')[1:]  # Split entries and remove the first empty entry
-    formatted_cards = [extract_card_details(entry) for entry in card_entries]
-    formatted_cards = [card for card in formatted_cards if card is not None]  # Filter out None values
-
-    message = '\n'.join(formatted_cards) if formatted_cards else 'No valid card details found.'
+    card_details = extract_card_details(update.message.text)
+    message = '\n'.join(card_details) if card_details else 'No valid card details found.'
     update.message.reply_text(message)
 
 def main() -> None:
