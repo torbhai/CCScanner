@@ -4,13 +4,12 @@ import re
 
 def extract_card_details(entry):
     card_number_match = re.search(r'\b(\d{4} \s\d{4} \s\d{4} \s\d{4})\b', entry)
-    expiry_date_match = re.search(r'\bexp(?:iry)?\s*(\d{2}[/\-]\d{2,4})', entry, re.IGNORECASE)
-    cvv_match = re.search(r'\bcvv[-\s]?(\d{3,4})\b', entry, re.IGNORECASE)
-
-    if card_number_match and expiry_date_match and cvv_match:
+    expiry_date_cvv_match = re.search(r'\b(\d{2}[/\-]\d{2,4})\s+(\d{3,4})\b', entry)
+    
+    if card_number_match and expiry_date_cvv_match:
         card_number = card_number_match.group(1).replace(' ', '')
-        expiry_date = expiry_date_match.group(1).replace('/', '').replace('-', '')
-        cvv = cvv_match.group(1)
+        expiry_date = expiry_date_cvv_match.group(1).replace('/', '').replace('-', '')
+        cvv = expiry_date_cvv_match.group(2)
         return f'{card_number} | {expiry_date} | {cvv}'
     else:
         return None
