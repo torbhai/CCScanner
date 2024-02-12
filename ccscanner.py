@@ -4,12 +4,12 @@ import re
 
 def extract_card_details(entry):
     card_number_match = re.search(r'\b(\d{4} \s\d{4} \s\d{4} \s\d{4})\b', entry)
-    expiry_date_cvv_match = re.search(r'\b(\d{2}[/\-]\d{2,4})\s+(\d{3,4})\b', entry)
+    expiry_date_cvv_match = re.search(r'\b(\d{2}[/\-]\d{2,4})\s*(cvv[-\s]?|CVV[-\s]?)(\d{3,4})\b', entry, re.IGNORECASE)
     
     if card_number_match and expiry_date_cvv_match:
         card_number = card_number_match.group(1).replace(' ', '')
         expiry_date = expiry_date_cvv_match.group(1).replace('/', '').replace('-', '')
-        cvv = expiry_date_cvv_match.group(2)
+        cvv = expiry_date_cvv_match.group(3)
         return f'{card_number} | {expiry_date} | {cvv}'
     else:
         return None
@@ -25,7 +25,7 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
 
 def main() -> None:
     # Replace 'YOUR_BOT_TOKEN' with your Bot's API token
-    updater = Updater("6759397107:AAHjYMEyaauDyFVjkiT2Zq8B3hMTNvzJus0", use_context=True)
+    updater = Updater("YOUR_BOT_TOKEN", use_context=True)
 
     dispatcher = updater.dispatcher
 
