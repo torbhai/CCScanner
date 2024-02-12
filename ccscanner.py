@@ -6,8 +6,8 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
     user_input = update.message.text.split("\n")
 
     card_number_pattern = r'\b\d{4} \d{4} \d{4} \d{4}\b'
-    expiry_date_pattern = r'\b\d{2}/\d{2}\b'
-    cvv_pattern = r'\b\d{3,4}\b'  # updated to handle CVV of 3 or 4 digits.
+    expiry_date_pattern = r'\b\d{2}[-/]\d{2}\b'  # updated to handle '-' or '/' as separators.
+    cvv_pattern = r'(?i)cvv[-\s]\d{3,4}\b'  # updated to handle 'CVV-' or 'cvv ' as prefixes.
 
     card_numbers = re.findall(card_number_pattern, update.message.text)
     expiry_dates = re.findall(expiry_date_pattern, update.message.text)
@@ -17,8 +17,8 @@ def format_card_details(update: Update, context: CallbackContext) -> None:
         formatted_cards = []
         for i in range(len(card_numbers)):
             card_number = card_numbers[i].replace(' ', '')
-            expiry_date = expiry_dates[i].replace('/', '')
-            cvv = cvvs[i]
+            expiry_date = expiry_dates[i].replace('/', '').replace('-', '')
+            cvv = cvvs[i].split(' ')[1] if ' ' in cvvs[i] else cvvs[i].split('-')[1]
             formatted_cards.append(f'{card_number} | {expiry_date} | {cvv}')
         message = '\n'.join(formatted_cards)
     else:
